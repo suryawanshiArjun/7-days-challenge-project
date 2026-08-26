@@ -1,103 +1,155 @@
 using UnityEngine;
 
+[RequireComponent(typeof(BoxCollider2D))]
 public class CarController : MonoBehaviour
 {
     [Header("Movement")]
-    public float speed = 3f;
-    public float rotationSpeed = 6f;
+    [Range(0.05f, 2f)]
+    public float moveSpeed = 0.2f;          // Slow speed for demo
 
-    [Header("Starting Waypoint")]
+    public float rotationSpeed = 5f;
+    public float waypointReachDistance = 0.2f;
+
+    [Header("Vehicle Detection")]
+    public float checkDistance = 1.2f;
+    public LayerMask vehicleLayer;
+
+    [Header("Current Waypoint")]
     public Waypoint currentWaypoint;
 
     private Waypoint targetWaypoint;
 
-    void Start()
+    private bool stoppedBySignal = false;
+    private bool stoppedByVehicle = false;
+
+    //------------------------------------------------------------
+
+    public void SetWaypoint(Waypoint wp)
     {
-        Debug.Log("===== CAR START =====");
-
-        if (currentWaypoint == null)
-        {
-            Debug.LogError("Current Waypoint is NULL!");
-            return;
-        }
-
-        Debug.Log("Current Waypoint : " + currentWaypoint.name);
-
-        transform.position = currentWaypoint.transform.position;
-
-        if (currentWaypoint.nextWaypoints.Length == 0)
-        {
-            Debug.LogError(currentWaypoint.name + " has NO Next Waypoints!");
-            return;
-        }
-
-        targetWaypoint = currentWaypoint.nextWaypoints[0];
-
-        Debug.Log("Target Waypoint : " + targetWaypoint.name);
+        currentWaypoint = wp;
+        targetWaypoint = wp;
     }
+
+    //------------------------------------------------------------
 
     void Update()
     {
         if (targetWaypoint == null)
             return;
 
-        MoveToWaypoint();
+        CheckVehicle();
+        CheckTrafficSignal();
+
+        if (stoppedByVehicle || stoppedBySignal)
+            return;
+
+        MoveVehicle();
     }
 
-    void MoveToWaypoint()
+    //------------------------------------------------------------
+
+    void CheckVehicle()
     {
-        Vector3 direction = targetWaypoint.transform.position - transform.position;
-        direction.z = 0;
+        stoppedByVehicle = false;
 
-        // Rotate towards target
-        if (direction != Vector3.zero)
+        RaycastHit2D hit = Physics2D.Raycast(
+            transform.position,
+            transform.up,
+            checkDistance,
+            vehicleLayer);
+
+        if (hit.collider != null && hit.collider.gameObject != gameObject)
         {
-            Quaternion targetRotation = Quaternion.LookRotation(Vector3.forward, direction);
-
-            transform.rotation = Quaternion.Slerp(
-                transform.rotation,
-                targetRotation,
-                rotationSpeed * Time.deltaTime
-            );
+            stoppedByVehicle = true;
         }
+    }
 
-        // Move towards target
+    //------------------------------------------------------------
+
+    void CheckTrafficSignal()
+    {
+        stoppedBySignal = false;
+
+        if (!targetWaypoint.isStopPoint)
+            return;
+
+        if (targetWaypoint.trafficLight == null)
+            return;
+
+        TrafficLight light = targetWaypoint.trafficLight;
+
+        if (light.IsRed())
+        {
+            stoppedBySignal = true;
+        }
+        else if (light.IsYellow())
+        {
+            float d = Vector2.Distance(
+                transform.position,
+                targetWaypoint.transform.position);
+
+            if (d > 0.5f)
+                stoppedBySignal = true;
+        }
+    }
+
+    //------------------------------------------------------------
+
+    void MoveVehicle()
+    {
+        Vector3 targetPos = targetWaypoint.transform.position;
+        targetPos.z = transform.position.z;
+
         transform.position = Vector3.MoveTowards(
             transform.position,
-            targetWaypoint.transform.position,
-            speed * Time.deltaTime
-        );
+            targetPos,
+            moveSpeed * Time.deltaTime);
 
-        // Reached target
-        if (Vector3.Distance(transform.position, targetWaypoint.transform.position) < 0.05f)
+        Vector3 direction = targetPos - transform.position;
+
+        if (direction.sqrMagnitude > 0.001f)
         {
-            Debug.Log("Reached : " + targetWaypoint.name);
+            Quaternion targetRotation =
+                Quaternion.LookRotation(Vector3.forward, direction);
 
-            currentWaypoint = targetWaypoint;
-
-            // ===== DEBUG START =====
-            Debug.Log("Current Waypoint = " + currentWaypoint.name);
-            Debug.Log("Array Length = " + currentWaypoint.nextWaypoints.Length);
-
-            for (int i = 0; i < currentWaypoint.nextWaypoints.Length; i++)
-            {
-                if (currentWaypoint.nextWaypoints[i] != null)
-                    Debug.Log("Waypoint[" + i + "] = " + currentWaypoint.nextWaypoints[i].name);
-                else
-                    Debug.Log("Waypoint[" + i + "] = NULL");
-            }
-            // ===== DEBUG END =====
-
-            if (currentWaypoint.nextWaypoints.Length > 0)
-            {
-                targetWaypoint = currentWaypoint.nextWaypoints[0];
-                Debug.Log("Next Target = " + targetWaypoint.name);
-            }
-            else
-            {
-                Debug.LogError("No next waypoint!");
-                targetWaypoint = null;
-            }
+            transform.rotation = Quaternion.Lerp(
+                transform.rotation,
+                targetRotation,
+                rotationSpeed * Time.deltaTime);
         }
+
+        if (Vector3.Distance(transform.position, targetPos) <= waypointReachDistance)
+        {
+            ChooseNextWaypoint();
+        }
+    }
+
+    //------------------------------------------------------------
+
+    void ChooseNextWaypoint()
+    {
+        if (targetWaypoint.nextWaypoints == null ||
+            targetWaypoint.nextWaypoints.Count == 0)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        targetWaypoint =
+            targetWaypoint.nextWaypoints[
+                Random.Range(0, targetWaypoint.nextWaypoints.Count)];
+
+        currentWaypoint = targetWaypoint;
+    }
+
+    //------------------------------------------------------------
+
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.red;
+
+        Gizmos.DrawLine(
+            transform.position,
+            transform.position + transform.up * checkDistance);
     }
 }
