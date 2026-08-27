@@ -56,6 +56,8 @@
     <Compile Include="Assets\scripts\TrafficSignals\TrafficLight.cs" />
     <Compile Include="Assets\scripts\Managers\UIManager.cs" />
     <Compile Include="Assets\scripts\Vehicles\VehicleLife.cs" />
+    <Compile Include="Assets\scripts\TrafficSignals\EmergencyVehicle.cs" />
+    <Compile Include="Assets\scripts\Vehicles\EmergencySpawner.cs" />
     <Compile Include="Assets\scripts\Managers\GameManager.cs" />
     <Compile Include="Assets\scripts\TrafficSignals\TrafficSignalController.cs" />
     <Compile Include="Assets\scripts\Managers\TrafficManager.cs" />
@@ -65,7 +67,10 @@
     <Compile Include="Assets\scripts\Road\SpawnPoint.cs" />
     <Compile Include="Assets\scripts\Road\Waypoint.cs" />
     <Compile Include="Assets\scripts\Managers\SimulationManager.cs" />
+    <Compile Include="Assets\scripts\Vehicles\AmbulanceController.cs" />
     <Compile Include="Assets\scripts\Vehicles\VehiclePool.cs" />
+    <Compile Include="Assets\scripts\Vehicles\EmergencyVehicle.cs" />
+    <Compile Include="Assets\scripts\TrafficSignals\EmergencyTrafficController.cs" />
     <Compile Include="Assets\scripts\Vehicles\VehicleAI.cs" />
     <Compile Include="Assets\scripts\Road\Intersection.cs" />
     <Compile Include="Assets\scripts\Vehicles\VehicleSpawner.cs" />

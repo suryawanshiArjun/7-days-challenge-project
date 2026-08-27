@@ -14,6 +14,9 @@ public class CarController : MonoBehaviour
     public float checkDistance = 1.2f;
     public LayerMask vehicleLayer;
 
+    [Header("Emergency Vehicle")]
+    public bool isEmergencyVehicle = false;
+
     [Header("Current Waypoint")]
     public Waypoint currentWaypoint;
 
@@ -40,8 +43,17 @@ public class CarController : MonoBehaviour
         CheckVehicle();
         CheckTrafficSignal();
 
-        if (stoppedByVehicle || stoppedBySignal)
+        if (stoppedByVehicle)
+        {
+            Debug.Log(gameObject.name + " stopped by vehicle");
             return;
+        }
+
+        if (stoppedBySignal)
+        {
+            Debug.Log(gameObject.name + " stopped by signal");
+            return;
+        }
 
         MoveVehicle();
     }
@@ -52,16 +64,23 @@ public class CarController : MonoBehaviour
     {
         stoppedByVehicle = false;
 
+        // Ambulance ignores all vehicles
+        if (isEmergencyVehicle)
+            return;
+
         RaycastHit2D hit = Physics2D.Raycast(
             transform.position,
             transform.up,
             checkDistance,
             vehicleLayer);
 
-        if (hit.collider != null && hit.collider.gameObject != gameObject)
-        {
-            stoppedByVehicle = true;
-        }
+        if (hit.collider == null)
+            return;
+
+        if (hit.collider.gameObject == gameObject)
+            return;
+
+        stoppedByVehicle = true;
     }
 
     //------------------------------------------------------------
@@ -69,6 +88,10 @@ public class CarController : MonoBehaviour
     void CheckTrafficSignal()
     {
         stoppedBySignal = false;
+
+        // Ambulance ignores all traffic lights
+        if (isEmergencyVehicle)
+            return;
 
         if (!targetWaypoint.isStopPoint)
             return;

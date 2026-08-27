@@ -8,10 +8,16 @@ public class VehicleSensor : MonoBehaviour
     public LayerMask vehicleLayer;
 
     private bool vehicleAhead;
+    private bool ambulanceAhead;
 
     public bool IsVehicleAhead()
     {
         return vehicleAhead;
+    }
+
+    public bool IsAmbulanceAhead()
+    {
+        return ambulanceAhead;
     }
 
     void Update()
@@ -22,6 +28,7 @@ public class VehicleSensor : MonoBehaviour
     void CheckVehicleAhead()
     {
         vehicleAhead = false;
+        ambulanceAhead = false;
 
         RaycastHit2D hit = Physics2D.Raycast(
             transform.position,
@@ -36,6 +43,20 @@ public class VehicleSensor : MonoBehaviour
 
         if (hit.collider != null)
         {
+            // Check if the object ahead is an ambulance
+            if (hit.collider.GetComponent<EmergencyVehicle>() != null)
+            {
+                ambulanceAhead = true;
+
+                Debug.DrawRay(
+                    transform.position,
+                    transform.up * sensorDistance,
+                    Color.cyan);
+
+                return;
+            }
+
+            // Check if the object ahead is a normal vehicle
             CarController car = hit.collider.GetComponent<CarController>();
 
             if (car != null && car.gameObject != gameObject)
